@@ -1,0 +1,9 @@
+Usage:
+-----
+
+    . rxossh.sh [-v] [cmdfile]
+
+    -v      : verbose mode
+    cmdfile : path of commands file
+    -h      : show this help text
+
