@@ -1,0 +1,6 @@
+try remembering why -tt I added
+
+verbose and coloring are different
+event being less verbose coloring can be used
+separate them
+
