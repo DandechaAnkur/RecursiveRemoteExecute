@@ -1,9 +1,9 @@
 Usage:
 -----
 
-    .  rxossh.sh  <commands_filepath>  [-v | --verbose]
+    .  rxossh.sh  <commands_filepath>  [-s | --silent]
 
-    --verbose | -v      : verbose mode
+    --silent | -s       : to quiet the default verbose mode
 
     commands_filepath   : local filepath of the text file that has the commands to be run
 

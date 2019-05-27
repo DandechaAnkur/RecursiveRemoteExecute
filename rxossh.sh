@@ -5,10 +5,10 @@ if [[ $* =~ -h ]] || [[ $* =~ --help ]]; then
 fi
 
 
-if [[ $* =~ -v ]] || [[ $* =~ --verbose ]]; then
-    var_verbose="-v"
-else
+if [[ $* =~ -s ]] || [[ $* =~ --silent ]]; then
     var_verbose=""
+else
+    var_verbose="-v"
 fi
 
 
