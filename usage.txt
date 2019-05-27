@@ -1,11 +1,17 @@
 Usage:
 -----
 
-    .  rxossh.sh  <commands_filepath>  [-s | --silent]
+    ./rxossh.sh                 \
+        <commands_filepath>     \
+        [-s | --silent]         \
+        [-h | --help]
 
-    --silent | -s       : to quiet the default verbose mode
+    commands_filepath
+        local filepath of the text file that has the commands to be run
 
-    commands_filepath   : local filepath of the text file that has the commands to be run
+    --silent | -s
+        to quiet the default verbose mode
 
-    --help | -h         : show this help text
+    --help | -h
+        show this help text
 
