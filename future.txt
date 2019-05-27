@@ -1,6 +1,31 @@
-try remembering why -tt I added
+issue:
+try remembering why -tt I added?
+resolution:
+.   to avoid error log stating 'stdin not there so won't create shell or something'
+    but even after errorneous log it used to execute commands
+.   also -tt merges both stdin and stdout to stdout
 
+issue:
 verbose and coloring are different
 event being less verbose coloring can be used
 separate them
+resolution:
+.   removed coloring altogether .. it felt like unnecessary clutter
+.   the -v switch will add descriptive logs of on what shell what's getting executed that's all
+.   if no -v then no other log is present
+.   when -v these logs are added going to stderr
+
+issue:
+add option to run absent script through scping it
+suggest this to rxossh using again some kind of a label
+resolution:
+.   future
+
+issue:
+need to scp runner files with distinctive numbers
+problem: when sshing to localhost command files will get overwritten
+problem: 2+ guys ssh to same machine command files will get overwritten
+can use src/dest port something which makes the connections unique
+resolution:
+.   using mktemp -d solves this
 

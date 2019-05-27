@@ -1,9 +1,11 @@
 Usage:
 -----
 
-    . rxossh.sh [-v] [cmdfile]
+    .  rxossh.sh  <commands_filepath>  [-v | --verbose]
 
-    -v      : verbose mode
-    cmdfile : path of commands file
-    -h      : show this help text
+    --verbose | -v      : verbose mode
+
+    commands_filepath   : local filepath of the text file that has the commands to be run
+
+    --help | -h         : show this help text
 

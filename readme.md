@@ -48,8 +48,8 @@ exit
 .. and execute it all, with one press of Enter key!
 
 Well! With the rxossh.sh script, now you can!
-Put the above serial commands into one text file, let's name it "remote.commands" file.
-The only addtional effort is, labelling "ssh" and corresponding "exit" with #NUMBERs, like this,
+Let's put the above commands into one text file, let's name it "remote.commands" file, you can choose any name.
+Now, the only addtional effort is, labelling "ssh" and corresponding "exit" with same #number kind of labels, see below,
 
 ```
 cat remote.commands
@@ -64,7 +64,6 @@ echo I came on machine3 from machine1
 exit #3
 echo I am on machine1 now
 exit #1
-exit #script
 ```
 
 And, execute:
@@ -72,9 +71,9 @@ And, execute:
 ./rxossh.sh remote.commands
 ```
 
-And that's all!
+That's all!
 
-The jumping over to machines, executing the intended commands on it, exiting from that shell, etc. - all this is handled by the rxossh script.
+The jumping over to machines, executing the intended commands, exiting from the shells, etc. - all this is handled by the rxossh script.
 Btw, rxossh is for 'Remote Execute over SSH', if you got curious as to why such a name! :)
 
 For command line arguments see this [USAGE](usage.txt) file.
