@@ -1,17 +1,30 @@
 Usage:
 -----
 
-    ./rxossh.sh                 \
-        <commands_filepath>     \
-        [-s | --silent]         \
-        [-h | --help]
+    ./rxossh.sh                                 \
+        <commands_filepath>                     \
+        [-v   | --verbose]                      \
+        [-lc  | --log-commands]                 \
+        [-ppl | --print-parser-logs]            \
+        [-kf  | --keep-files]                   \
+        [-h   | --help]
 
-    commands_filepath
-        local filepath of the text file that has the commands to be run
+    <commands_filepath>
+        path of the text file containing commands
 
-    --silent | -s
-        to quiet the default verbose mode
+    -v | --verbose
+        will print the shell scripts that are being executed
 
-    --help | -h
-        show this help text
+    -lc | --log-commands
+        will print each command broken down to its pieces
+        this is done using the 'set -x' command
+
+    -ppl | --print-parser-logs
+        will print the logs about the parser's state
+
+    -kf | --keep-files
+        will keep the generated scripts instead of cleaning up
+
+    -h | --help
+        displays this message
 

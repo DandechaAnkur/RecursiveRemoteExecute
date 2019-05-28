@@ -1,0 +1,16 @@
+ssh     u1@m1   #1
+echo    on m1
+exit            #1
+ssh     u2@m2   #2
+function whereami
+{
+        if [ "$IDK" == "whereami" ];
+                hostname
+        fi
+}
+whereami
+ssh     u3@m3   #3
+echo    on m3
+exit            #3
+exit            #2
+exit            #script

@@ -5,6 +5,7 @@ resolution:
     but even after errorneous log it used to execute commands
 .   also -tt merges both stdin and stdout to stdout
 
+
 issue:
 verbose and coloring are different
 event being less verbose coloring can be used
@@ -15,11 +16,13 @@ resolution:
 .   if no -v then no other log is present
 .   when -v these logs are added going to stderr
 
+
 issue:
 add option to run absent script through scping it
 suggest this to rxossh using again some kind of a label
 resolution:
 .   future
+
 
 issue:
 need to scp runner files with distinctive numbers
@@ -28,4 +31,52 @@ problem: 2+ guys ssh to same machine command files will get overwritten
 can use src/dest port something which makes the connections unique
 resolution:
 .   using mktemp -d solves this
+
+
+issue:
+piping of stdin happens
+but the last consumer of stdin, in this case the last ssh, even after encountering exit, its own inner logical state where it doesn't need to read anymore from stdin, yet somehow ends up reading the stdin to the fullest, and thus stdin's inner/corresponding pointer points to its EOF
+causing it to not pipe from "exit"'s byte offset and further
+so maybe it's the bash,mksh,sh,etc shells who are piping it full
+or my suspect is on the ssh implementation which should not consume the stdin full somehow
+
+cat rcs
+source ~/.bashrc
+ssh $m1
+ssh $m2
+ssh $m3
+some_m3_only_cmd
+exit
+exit
+exit
+
+cat rcs | bash
+
+this will go into m1, m2, all the way upto m3; and also exec some_m3_only_cmd successfully on m3 and also exit
+and now you will lie waiting for stdin on m2 to give something but alas it's fully consumed, by m3
+
+for me: either correct ssh implementation
+or: anyway i can still get around this problemo by my labeled exits and make use of my new found knowledge of catting|to-ssh
+
+btw i did all this thinking because current rxossh cannot exec complex commands like if/for/while constructs or pipes or multiline commands due to its eval usage
+
+
+issue:
+-----
+it's so intriguing to remove the temp dir in same ssh-session
+doing something like below:
+ssh $remote "source $var_remote_dir/script.sh; rm -rf $var_remote_dir;"
+but inherently this is flawed as in the followin explanation:
+don't add 'exit' into local_commands.sh as it's sourced by rxossh.sh
+which in turn is sourced on ssh via ssh's [command] argument
+thus any exit causing termination of session and thus not being able
+and want any specified consecutive commands to be still executed
+resolution:
+it was due to sourcing arbitrary local commands which may cause to exit ssh anytime thus not allowing comma separated commands to run
+
+
+issue:
+-----
+parse ssh options/switches and add them into generated ssh command like -tt
+or key files etc
 

@@ -1,84 +1,81 @@
-Through this, you can execute commands jumping over machines.
+Through this, you can execute a list of bash commands, having random ssh jumps in between, correctly. The user friendly part here, is the ease of specifying what code to execute on what machine.
 
-That's not the Magic, the Magic is in how you specify your commands!
-
-Your commands, in one file, line by line.
+Let's take something like below - your commands, in one file, line by line:
 ```
-    SSH u@m1
-    Exec some_command
-    Exit
-    SSH u@m2
-    Exec some_another_command
-    SSH u@m3
-    Exec some_another_command
-    Exit
-    Exit
+ 1    ssh   u1@m1
+ 2    echo  on m1
+ 3    exit
+
+ 4    ssh   u2@m2
+ 5    function whereami
+ 6    {
+ 7          if [ "$IDK" == "whereami" ];
+ 8              hostname
+ 9          fi
+10    }
+11    whereami
+
+          # indentation is just to signify
+          # this is going from machine m2 to m3
+12        ssh   u3@m3
+13        echo  on m3
+14        exit
+
+15    exit
 ```
-And, still every command runs, exactly on whatever shell that it's intended to run.
-Please bear with me while I explain this in the following.
+The intention here is to execute:
+* 1st line on main machine,
+* 2-3 on machine m1, and 
+* 4th line again on main machine,
+* 5-12 on machine m2
+* 13-14 on machine m3
+* 15th on machine m2
 
-Let's assume, I want to execute some commands on some machines, jumping from one machine to another:
+In effect, you want to give your code in one file, line by line, yet, whenever ssh jumps are specified, the later portion of the code, should be executed over to the made ssh, and whensoever that ssh is exited from, the next lines of code should get executed on the parent shell.
 
-```
-admin@macihne0:> ssh machine1
-admin@machine1:> ssh machine2
-admin@machine2:> echo I came on machine2 from machine1
-admin@machine2:> exit
-admin@machine1:> ssh machine3
-admin@machine3:> echo I came on machine3 from machine1
-admin@machine3:> exit
-admin@machine1:> echo I am on machine1 now
-admin@machine1:> exit
-```
-
-What if I would be able to specify all these commands serially!? Like below ..
-
-```
-ssh machine1
-ssh machine2
-echo I came on machine2 from machine1
-exit
-ssh machine3
-echo I came on machine3 from machine1
-exit
-echo I am on machine1 now
-exit
-```
-
-.. and execute it all, with one press of Enter key!
-
-Well! With the rxossh.sh script, now you can!
-Let's put the above commands into one text file, let's name it "remote.commands" file, you can choose any name.
-Now, the only addtional effort is, labelling "ssh" and corresponding "exit" with same #number kind of labels, see below,
+This project makes it simple to achieve - all we need to do is label the SSH calls and corresponding EXIT calls with same #Number kind of label at the end of these two commands. Please check the following to see what I mean -
 
 ```
-cat remote.commands
-```
-```
-ssh machine1 #1
-ssh machine2 #2
-echo I came on machine2 from machine1
-exit #2
-ssh machine3 #3
-echo I came on machine3 from machine1
-exit #3
-echo I am on machine1 now
-exit #1
+ 1    ssh   u1@m1   #1
+ 2    echo  on m1
+ 3    exit          #1
+ 4    ssh   u2@m2   #2
+ 5    function whereami
+ 6    {
+ 7          if [ "$IDK" == "whereami" ];
+ 8              hostname
+ 9          fi
+10    }
+11    whereami
+12    ssh   u3@m3   #3
+13    echo  on m3
+14    exit          #3
+15    exit          #2
+16    exit          #script
 ```
 
-And, execute:
+So, the only additional effort here, is to label every ssh-exit command pairs with same #Numbers.
+
+The #Numbers should not be repeated. Though the increasing order is used in the above example, it is not necessary.
+
+And, as you can see, we end our commands file, with an additional "exit #script" command.
+
+So, have your commands, in one file, with #Number labelled ssh-exit pairs, and give it to the rxossh.sh script as its 1st argument, and you're good to go!
+
+It just have to be a text file, with any suitable name. I have kept above example script [in here](commands.txt).
+
+And when you're ready with your commands file, simply execute:
 ```
-./rxossh.sh remote.commands
+./rxossh.sh commands.txt
 ```
 
 That's all!
 
-The jumping over to machines, executing the intended commands, exiting from the shells, etc. - all this is handled by the rxossh script.
-Btw, rxossh is for 'Remote Execute over SSH', if you got curious as to why such a name! :)
+(Btw, 'rxossh' was formed from 1st letters of 'Remote Execute over SSH'!)
 
 For command line arguments see this [USAGE](usage.txt) file.
 
-Happy SSHing! Cheers! :)
+Happy SSHing! :)
 
--Ankur Dandecha
+-ADandecha
 
