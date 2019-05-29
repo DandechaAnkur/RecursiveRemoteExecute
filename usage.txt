@@ -7,6 +7,7 @@ Usage:
         [-lc  | --log-commands]                 \
         [-ppl | --print-parser-logs]            \
         [-kf  | --keep-files]                   \
+        [-al  | --all-logs]                     \
         [-h   | --help]
 
     <commands_filepath>
@@ -17,13 +18,17 @@ Usage:
 
     -lc | --log-commands
         will print each command broken down to its pieces
-        this is done using the 'set -x' command
+        generally this switch should suffice for debugging
 
     -ppl | --print-parser-logs
         will print the logs about the parser's state
 
     -kf | --keep-files
         will keep the generated scripts instead of cleaning up
+
+    -al | --all-logs
+        will enable all kinds of logs
+        will be equivalent to adding -v -lc -ppl
 
     -h | --help
         displays this message

@@ -6,14 +6,14 @@ function pass
 # bare log without shell no
 function blog
 {
-    if [[ "$var_verbosity" == "-v" ]] || [[ "$var_verbosity" == "--verbose" ]]; then
+    if [[ "$var_verbosity" == "--verbose" ]]; then
         echo $* 2>&1
     fi
 }
 
 function log
 {
-    if [[ "$var_verbosity" == "-v" ]] || [[ "$var_verbosity" == "--verbose" ]]; then
+    if [[ "$var_verbosity" == "--verbose" ]]; then
         echo [Shell\#$var_shell_no] $* 2>&1
     fi
 }
@@ -21,20 +21,18 @@ function log
 # log echo
 function loge
 {
-    if [[ "$var_verbosity" == "-v" ]] || [[ "$var_verbosity" == "--verbose" ]]; then
-        echo echo [Shell\#$var_shell_no] $* 2>&1
+    if [[ "$var_verbosity" == "--verbose" ]]; then
+        echo echo [Shell\\#$var_shell_no] $* 2>&1
     fi
 }
 
 # log echo v2 echoing on lc flag too
 function loge2
 {
-    if  [[ "$var_verbosity" == "-v" ]] || \
-        [[ "$var_verbosity" == "--verbose" ]] || \
-        [[ "$var_log_commands" == "-lc" ]] || \
+    if  [[ "$var_verbosity" == "--verbose" ]] || \
         [[ "$var_log_commands" == "--log-commands" ]];
     then
-        echo echo [Shell\#$var_shell_no] $* 2>&1
+        echo echo [Shell\\#$var_shell_no] $* 2>&1
     fi
 }
 
@@ -48,7 +46,7 @@ function plog
 
 function remove
 {
-    if [[ "$var_keep_files" == "0" ]]; then
+    if [[ "$var_keep_files" != "--keep-files" ]]; then
         rm -rf $*
     fi
 }
@@ -65,33 +63,44 @@ function main
     fi
 
 
-    if [[ " $* " == *" -lc "* ]] || [[ " $* " == *" --log-commands "* ]]; then
+    if [[ " $* " == *" -al "* ]] || [[ " $* " == *" --all-logs "* ]]; then
+
         var_log_commands="--log-commands"
-    else
-        var_log_commands=""
-    fi
-
-
-    if [[ " $* " == *" -v "* ]] || [[ " $* " == *" --verbose "* ]]; then
         var_verbosity="--verbose"
         var_output_stream=/dev/stdout
-    else
-        var_verbosity="--silent"
-        var_output_stream=/dev/null
-    fi
-
-
-    if [[ " $* " == *" -ppl "* ]] || [[ " $* " == *" --print-parser-logs "* ]]; then
         var_parser_logs=1
+
     else
-        var_parser_logs=0
+
+        if [[ " $* " == *" -lc "* ]] || [[ " $* " == *" --log-commands "* ]]; then
+            var_log_commands="--log-commands"
+        else
+            var_log_commands=""
+        fi
+
+
+        if [[ " $* " == *" -v "* ]] || [[ " $* " == *" --verbose "* ]]; then
+            var_verbosity="--verbose"
+            var_output_stream=/dev/stdout
+        else
+            var_verbosity="--silent"
+            var_output_stream=/dev/null
+        fi
+
+
+        if [[ " $* " == *" -ppl "* ]] || [[ " $* " == *" --print-parser-logs "* ]]; then
+            var_parser_logs=1
+        else
+            var_parser_logs=0
+        fi
+
     fi
 
 
     if [[ " $* " == *" -kf "* ]] || [[ " $* " == *" --keep-files "* ]]; then
-        var_keep_files=1
+        var_keep_files=--keep-files
     else
-        var_keep_files=0
+        var_keep_files=
     fi
 
 
@@ -102,24 +111,32 @@ function main
     fi
 
 
-    var_local_commands_to_be_sourced="$var_self_dir/local_commands.sh"
-
-    var_local_commands="$var_self_dir/local_commands"
-
     if [ ! -f "$1" ]; then
         >&2 echo Not a file: $1
         return 1
     fi
 
-    cp "$1" "$var_local_commands" >/dev/null 2>&1 # for inner shell both files are same
+    var_commands_dir=`realpath $(dirname "$1")`
+    echo $var_commands_dir | grep -P "^.*/rxossh-.......$" >/dev/null 2>&1
+    if [[ "${PIPESTATUS[1]}" == "1" ]]; then
+        var_commands_dir_mktemped=1
+        var_commands_dir=`mktemp -p "$var_commands_dir" -d -t rxossh-XXXXXXX | tr -d '\n'`
+    fi
 
-    var_remote_commands_prefix="$var_self_dir/remote_commands"
+    var_local_commands_to_be_sourced="$var_commands_dir/local_commands.sh"
 
     if [[ $var_log_commands == "--log-commands" ]]; then
         echo "set -x" > $var_local_commands_to_be_sourced 
     else
-        printf "" > $var_local_commands_to_be_sourced
+        echo -n "" > $var_local_commands_to_be_sourced
     fi
+
+    var_local_commands="$var_commands_dir/local_commands"
+
+    cp "$1" "$var_local_commands" >/dev/null 2>&1 # for inner shell both files are same
+
+    var_remote_commands_prefix="$var_commands_dir/remote_commands"
+
 
     var_ssh_has_been_found=0
 
@@ -136,13 +153,13 @@ function main
         if [[ "${PIPESTATUS[1]}" == "0" ]]; then
 
             plog exit \#script
-            log Parsed initial script.
+            log Done parsing initial script.
 
             break
         fi
 
         # ignore empty lines ..
-        echo "$var_command" | grep -P "^\s+$" >/dev/null 2>&1
+        echo "$var_command" | grep -P "^\s*$" >/dev/null 2>&1
         if [[ "${PIPESTATUS[1]}" == "0" ]]; then
             plog empty line
             continue
@@ -156,6 +173,8 @@ function main
 
         if [[ "$var_ssh_has_been_found" == "1" ]]; then
 
+            echo $var_command >> $var_remote_commands
+
             var_exit_no=`echo $var_command | \
                 sed -n "s|exit *#\([[:digit:]][[:digit:]]*\)|\1|gp" | \
                 tr -d '\n'`
@@ -168,7 +187,7 @@ function main
                 echo var_remote_dir=\`ssh $var_ssh_target 'mktemp -d -t rxossh-XXXXXXX' \| tr -d \'\\n\'\` \
                     >> $var_local_commands_to_be_sourced
 
-                loge SCP rxossh with remote commands to $var_ssh_target [Shell\#$var_ssh_cmd_no] \
+                loge SCP rxossh with remote commands to $var_ssh_target [Shell\\#$var_ssh_cmd_no] \
                     >> $var_local_commands_to_be_sourced
 
                 echo scp $var_self_filepath \
@@ -181,27 +200,26 @@ function main
                     \> $var_output_stream \
                     >> $var_local_commands_to_be_sourced
 
+                # because I'm sourcing local_commands.sh remove will get value of its flag
                 echo remove $var_remote_commands \
                     >> $var_local_commands_to_be_sourced
 
-                loge2 SSH to $var_ssh_target [Shell\#$var_ssh_cmd_no] \
+                loge2 SSH to $var_ssh_target [Shell\\#$var_ssh_cmd_no] \
                     >> $var_local_commands_to_be_sourced
 
-                echo ssh -tt $var_ssh_target \""bash \$var_remote_dir/rxossh.sh \
+                echo ssh -tt $var_ssh_target \""( . \$var_remote_dir/rxossh.sh \
                     \$var_remote_dir/local_commands \
                     $var_verbosity \
                     --shell-no $var_ssh_cmd_no \
-                    $var_log_commands; \
+                    $var_log_commands; ); \
                     . \$var_remote_dir/rxossh.sh --libs; \
+                    var_keep_files=$var_keep_files; \
                     remove \$var_remote_dir;\"" \
                     >> $var_local_commands_to_be_sourced
 
-            else
-
-                # not putting exit into remote commands for now
-                # check later if sourcing is being done or else
-                # dumping exit into remote commands is fine too
-                echo $var_command >> $var_remote_commands
+                if [[ $var_log_commands == "--log-commands" ]]; then
+                    echo "set -x" >> $var_local_commands_to_be_sourced 
+                fi
 
             fi
 
@@ -224,7 +242,7 @@ function main
                     sed -n 's|ssh  *\(..*\)  *#\([[:digit:]][[:digit:]]*\)|\1|gp' | \
                     tr -d '\n'`
                 var_remote_commands=${var_remote_commands_prefix}_$var_ssh_cmd_no
-                #printf "" > $var_remote_commands
+                echo -n "" > $var_remote_commands
 
             else
 
@@ -235,8 +253,11 @@ function main
         fi
 
     done < $var_local_commands;
-
     remove $var_local_commands
+
+    if [[ $var_log_commands == "--log-commands" ]]; then
+        echo '{ set +x; } >/dev/null 2>&1' >> $var_local_commands_to_be_sourced
+    fi
 
     log executing the following here ..
     blog ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░
@@ -245,6 +266,10 @@ function main
 
     source $var_local_commands_to_be_sourced
     remove $var_local_commands_to_be_sourced
+
+    if [[ "$var_commands_dir_mktemped" == "1" ]]; then
+        remove $var_commands_dir
+    fi
 
 }
 

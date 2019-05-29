@@ -1,0 +1,13 @@
+01. SCP and SSH status were messing up while printing
+Res It was due to \# where \\# had to be used
+
+02. Wanted to remove temp dir in same SSH call
+Res Did this using (sub-shells) as (exit) won't exit parent
+	so sourced scripts even if they exit removals will go on
+
+03. What happens when the same script from same place is
+	to be run parallely? The generated scripts will overwrite
+	each other!
+Res If commands file is not in rxossh-XXXXXXX kind of dir mktemp
+	dir in the same dir of commands file.
+
