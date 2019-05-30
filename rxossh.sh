@@ -97,6 +97,21 @@ function main
     fi
 
 
+    if [[ " $* " == *" -nic "* ]] || \
+       [[ " $* " == *" --no-interactive-commands "* ]]
+    then
+        var_force_terminal_allocation_arg=--no-interactive-commands
+        var_force_terminal_allocation_ssh_arg=
+        var_ssh_stderr_rd_text=
+    else
+        var_force_terminal_allocation_arg=
+        var_force_terminal_allocation_ssh_arg=-tt
+        # curiously for ssh's -tt option 1&2 streams merge
+        # so we can disable disconnected message coming on 2
+        var_ssh_stderr_rd_text=2\>/dev/null
+    fi
+
+
     if [[ " $* " == *" -kf "* ]] || [[ " $* " == *" --keep-files "* ]]; then
         var_keep_files=--keep-files
     else
@@ -120,7 +135,7 @@ function main
     echo $var_commands_dir | grep -P "^.*/rxossh-.......$" >/dev/null 2>&1
     if [[ "${PIPESTATUS[1]}" == "1" ]]; then
         var_commands_dir_mktemped=1
-        var_commands_dir=`mktemp -p "$var_commands_dir" -d -t rxossh-XXXXXXX | tr -d '\n'`
+        var_commands_dir=`mktemp -p "$var_commands_dir" -d -t rxossh-XXXXXXX | sed -E 's|\r||g' | tr -d '\n'`
     fi
 
     var_local_commands_to_be_sourced="$var_commands_dir/local_commands.sh"
@@ -142,8 +157,8 @@ function main
 
     # https://unix.stackexchange.com/a/7012
     # IFS=$'\n'; set -f;
-    # for var_command in `cat $var_local_commands`; do
-    while read var_command
+    # for var_command in `cat $var_local_commands`
+    while read -r var_command
     do
 
         plog line: $var_command
@@ -184,20 +199,33 @@ function main
                 plog ssh exit found
                 var_ssh_has_been_found=0
 
-                echo var_remote_dir=\`ssh $var_ssh_target 'mktemp -d -t rxossh-XXXXXXX' \| tr -d \'\\n\'\` \
+                # has to remove all the \r's
+                # v=printf "A\rB\rC\r"; echo ${v}D will print only D
+                echo var_remote_dir=\`ssh -tt $var_ssh_extras $var_ssh_target 'mktemp -d -t rxossh-XXXXXXX' 2\>/dev/null \| sed -E \"s/\\r//g\" \| tr -d \'\\n\'\` \
                     >> $var_local_commands_to_be_sourced
 
-                loge SCP rxossh with remote commands to $var_ssh_target [Shell\\#$var_ssh_cmd_no] \
+                loge Copying rxossh with remote commands to $var_ssh_target [Shell\\#$var_ssh_cmd_no] \
                     >> $var_local_commands_to_be_sourced
 
-                echo scp $var_self_filepath \
-                    $var_ssh_target:"\$var_remote_dir/rxossh.sh" \
-                    \> $var_output_stream \
+                echo var_copied=0 \
                     >> $var_local_commands_to_be_sourced
 
-                echo scp $var_remote_commands \
-                    $var_ssh_target:"\$var_remote_dir/local_commands" \
-                    \> $var_output_stream \
+                # -T disables pseudo terminal allocation
+                # otherwise if extras have -tt in it there opens up an undying shell
+                # also keeping it after extras so as to be processed at the last
+                echo dd if=$var_self_filepath 2\>/dev/null \| \
+                    ssh $var_ssh_extras -T $var_ssh_target \
+                    \"dd of=\$var_remote_dir/rxossh.sh\" \
+                    2\>/dev/null \&\& var_copied=1 \
+                    >> $var_local_commands_to_be_sourced
+
+                echo dd if=$var_remote_commands 2\>/dev/null \| \
+                    ssh $var_ssh_extras -T $var_ssh_target \
+                    \"dd of=\$var_remote_dir/local_commands\" \
+                    2\>/dev/null \&\& var_copied=2 \
+                    >> $var_local_commands_to_be_sourced
+
+                echo "if [[ \$var_copied != 2 ]]; then >&2 echo Copying rxossh with remote commands failed.; fi" \
                     >> $var_local_commands_to_be_sourced
 
                 # because I'm sourcing local_commands.sh remove will get value of its flag
@@ -207,14 +235,21 @@ function main
                 loge2 SSH to $var_ssh_target [Shell\\#$var_ssh_cmd_no] \
                     >> $var_local_commands_to_be_sourced
 
-                echo ssh -tt $var_ssh_target \""( . \$var_remote_dir/rxossh.sh \
+                echo ssh $var_force_terminal_allocation_ssh_arg \
+                    $var_ssh_extras $var_ssh_target \
+                    \""( . \$var_remote_dir/rxossh.sh \
                     \$var_remote_dir/local_commands \
                     $var_verbosity \
                     --shell-no $var_ssh_cmd_no \
+                    $var_keep_files \
+                    $var_force_terminal_allocation_arg \
                     $var_log_commands; ); \
                     . \$var_remote_dir/rxossh.sh --libs; \
-                    var_keep_files=$var_keep_files; \
                     remove \$var_remote_dir;\"" \
+                    $var_ssh_stderr_rd_text \
+                    >> $var_local_commands_to_be_sourced
+
+                loge2 Exited $var_ssh_target [Shell\\#$var_ssh_cmd_no] \
                     >> $var_local_commands_to_be_sourced
 
                 if [[ $var_log_commands == "--log-commands" ]]; then
@@ -225,7 +260,7 @@ function main
 
         else
 
-            echo $var_command | grep -P '^ssh +[^ ]+ +#\d+$' >/dev/null 2>&1
+            echo $var_command | grep -P '^ *ssh +[^ ].* +#\d+ *$' >/dev/null 2>&1
             if [[ "${PIPESTATUS[1]}" == "0" ]]; then
 
                 plog ssh command encountered
@@ -236,10 +271,13 @@ function main
                 fi
 
                 var_ssh_cmd_no=`echo $var_command | \
-                    sed -n 's|ssh  *\(..*\)  *#\([[:digit:]][[:digit:]]*\)|\2|gp' | \
+                    sed -nE 's|^ *ssh +(.* +)?(([^@ ]+@)?[^@ ]+) +#([0-9]+) *$|\4|gp' | \
+                    tr -d '\n'`
+                var_ssh_extras=`echo $var_command | \
+                    sed -nE 's|^ *ssh +(.* +)?(([^@ ]+@)?[^@ ]+) +#([0-9]+) *$|\1|gp' | \
                     tr -d '\n'`
                 var_ssh_target=`echo $var_command | \
-                    sed -n 's|ssh  *\(..*\)  *#\([[:digit:]][[:digit:]]*\)|\1|gp' | \
+                    sed -nE 's|^ *ssh +(.* +)?(([^@ ]+@)?[^@ ]+) +#([0-9]+) *$|\2|gp' | \
                     tr -d '\n'`
                 var_remote_commands=${var_remote_commands_prefix}_$var_ssh_cmd_no
                 echo -n "" > $var_remote_commands
@@ -253,6 +291,7 @@ function main
         fi
 
     done < $var_local_commands;
+    # done
     remove $var_local_commands
 
     if [[ $var_log_commands == "--log-commands" ]]; then

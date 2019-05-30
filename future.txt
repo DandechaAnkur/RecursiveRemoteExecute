@@ -1,2 +1,3 @@
-01. Add full SSH param support
-02. Try resolving -tt's stream merge problem
+01. Add full SSH param support - done.
+02. Try resolving -tt's stream merge problem - remains.
+03. Try clean up even when errors, using a tracking file.

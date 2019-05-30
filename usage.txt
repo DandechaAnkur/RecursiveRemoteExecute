@@ -8,6 +8,7 @@ Usage:
         [-ppl | --print-parser-logs]            \
         [-kf  | --keep-files]                   \
         [-al  | --all-logs]                     \
+        [-nic | --no-interactive-commands]      \
         [-h   | --help]
 
     <commands_filepath>
@@ -30,6 +31,31 @@ Usage:
         will enable all kinds of logs
         will be equivalent to adding -v -lc -ppl
 
+    -nic | --no-interactive-commands
+        use when there are no interactive commands and stdin-stdout are 
+        needed separately
+        please check the footnote(1)
+
     -h | --help
         displays this message
+
+Footnotes:
+---------
+
+(1) By default, rxossh assumes the commands will be interactive. And
+    as such it invokes all SSH commands with -tt option, which isn't
+    in capable of distinguising stdout from stderr!
+
+    when SSH is asked to execute commands via piping or command line
+    arguments, meaning without the keyboard input being present, the
+    interactive shell isn't allocated.
+
+    The -tt parameter forces the SSH tool to launch the shell in the
+    interactive mode.
+
+    As to why the streams merge, is also a thing that is fascinating
+    this author.
+
+    In fact, if you're sure there is not going to be any interactive
+    command, please do use -nic flag, just to make it a bit quicker.
 

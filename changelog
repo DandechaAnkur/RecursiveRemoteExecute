@@ -1,3 +1,18 @@
+01. SSH arbitrary arguments should be handled.
+Res It is capable of handling arbitrary the SSH parameters now.
+
+	I've also added switch for default behavior of the notorious
+	-tt parameter. It can be used by the SSH to force terminal
+	allocation. But it will merge the stderr and stdout streams.
+
+	By default, I'm adding -tt, so that interactive commands run.
+
+	But in special case where you don't have interactive commands
+	and may want to	catch the stderr and stdout separately then
+	please use the -noft or --no-forced-terminals or -nott.
+
+--------------------------------------------------------------------
+
 01. SCP and SSH status were messing up while printing
 Res It was due to \# where \\# had to be used
 
