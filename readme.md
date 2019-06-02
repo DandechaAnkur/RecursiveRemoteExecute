@@ -1,4 +1,5 @@
-Through this, you can execute a list of bash commands, having random ssh jumps in between, correctly. The user friendly part here, is the ease of specifying what code to execute on what machine.
+Through this, you can execute a list of bash statements, some for local, some for remote, separated by random SSH jumps, correctly on intended remote shells.
+The convenience lies in how easily one can specify what code to execute on what machine.
 
 Let's take something like below - your commands, in one file, line by line:
 ```

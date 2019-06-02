@@ -58,6 +58,8 @@ function main
     var_self_dir=`realpath $(dirname "$var_self_filepath")`
 
     if [ $# -lt 1 ] || [[ " $* "  == *" -h "* ]] || [[ " $* " == *" --help "* ]]; then
+        command -v less && less "$var_self_dir/usage.txt" && return
+        command -v more && more "$var_self_dir/usage.txt" && return
         cat "$var_self_dir/usage.txt"
         return
     fi

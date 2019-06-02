@@ -44,9 +44,9 @@ Footnotes:
 
 (1) By default, rxossh assumes the commands will be interactive. And
     as such it invokes all SSH commands with -tt option, which isn't
-    in capable of distinguising stdout from stderr!
+    capable of distinguising stdout from stderr!
 
-    when SSH is asked to execute commands via piping or command line
+    When SSH is asked to execute commands via piping or command line
     arguments, meaning without the keyboard input being present, the
     interactive shell isn't allocated.
 
